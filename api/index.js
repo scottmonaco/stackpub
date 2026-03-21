@@ -18,109 +18,115 @@ function parseSubstackUrl(input) {
   return clean.split('/')[0];
 }
 
-async function fetchFeedPage(baseUrl, page) {
-  const url = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
-      redirect: 'follow',
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    if (!res.ok) return null;
-    const xml = await res.text();
-    if (!xml.includes('<rss')) return null;
-    const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
-    const channel = parsed.rss.channel;
-    const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
-    return { channel, items };
-  } catch (e) {
-    return null;
-  }
-}
+// ─── Use Substack's undocumented API for full post archive ───────────────────
+async function fetchViaAPI(publication) {
+  const baseUrl = `https://${publication}.substack.com`;
+  let allPosts = [];
+  let offset = 0;
+  const limit = 50;
+  const maxPosts = 500;
 
-async function fetchSubstackFeed(publication) {
-  const baseUrls = [
-    `https://${publication}.substack.com/feed`,
-    `https://${publication}/feed`
-  ];
-
-  let lastError;
-  for (const baseUrl of baseUrls) {
+  while (offset < maxPosts) {
+    const url = `${baseUrl}/api/v1/archive?sort=new&limit=${limit}&offset=${offset}`;
     try {
-      const first = await fetchFeedPage(baseUrl, 1);
-      if (!first || first.items.length === 0) continue;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
+        timeout: 8000
+      });
+      if (!res.ok) throw new Error('API not available');
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) break;
 
-      const channelMeta = first.channel;
-      let allItems = [...first.items];
-      let seenLinks = new Set(first.items.map(i => i.link || ''));
-      const firstPageCount = first.items.length;
+      for (const post of data) {
+        const title = post.title || '';
+        const slug = post.slug || '';
+        const link = `${baseUrl}/p/${slug}`;
+        const img = post.cover_image || '';
 
-      // Attempt pagination — fetch pages 2-4 in parallel for speed within timeout
-      if (firstPageCount >= 10) {
-        const pagesToFetch = [2, 3, 4, 5];
-        const results = await Promise.all(pagesToFetch.map(p => fetchFeedPage(baseUrl, p)));
-
-        for (const result of results) {
-          if (!result || result.items.length === 0) break;
-          let pageHadNew = false;
-          for (const item of result.items) {
-            const link = item.link || '';
-            if (link && !seenLinks.has(link)) {
-              seenLinks.add(link);
-              allItems.push(item);
-              pageHadNew = true;
-            }
-          }
-          if (!pageHadNew) break;
+        if (title && slug) {
+          const utmLink = `${link}?utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`;
+          allPosts.push({ title, link: utmLink, img });
         }
       }
 
-      const posts = allItems.map(item => {
-        const title = item.title || '';
-        const link = item.link || '';
-
-        let img = '';
-        if (item.enclosure && item.enclosure.$ && item.enclosure.$.url) {
-          const mimeType = item.enclosure.$.type || '';
-          if (mimeType.startsWith('image/') || (!mimeType && item.enclosure.$.url.match(/\.(jpg|jpeg|png|webp|gif)/i))) {
-            img = item.enclosure.$.url;
-          }
-        }
-        if (!img && item['media:content']) {
-          const media = item['media:content'];
-          if (media.$ && media.$.url) {
-            const mimeType = media.$.type || '';
-            if (!mimeType.startsWith('video/') && !mimeType.startsWith('audio/')) {
-              img = media.$.url;
-            }
-          }
-        }
-        if (!img) {
-          const content = item['content:encoded'] || '';
-          const match = content.match(/<img[^>]+src=["']([^"']+)["']/);
-          if (match) img = match[1];
-        }
-
-        const utmLink = link.includes('?')
-          ? `${link}&utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`
-          : `${link}?utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`;
-
-        return { title, link: utmLink, img };
-      }).filter(p => p.title && p.link);
-
-      const name = channelMeta.title || publication;
-      const logo = channelMeta.image?.url || '';
-      const substackUrl = channelMeta.link || `https://${publication}.substack.com`;
-
-      return { name, logo, substackUrl, posts };
+      if (data.length < limit) break;
+      offset += limit;
     } catch (e) {
-      lastError = e;
+      if (offset === 0) throw e; // First page failed, API not available
+      break; // Later page failed, return what we have
     }
   }
-  throw new Error(lastError?.message || `Could not fetch feed for "${publication}"`);
+
+  // Get publication meta from the homepage
+  let name = publication;
+  let logo = '';
+  let substackUrl = `https://${publication}.substack.com`;
+  try {
+    const metaRes = await fetch(`${baseUrl}/api/v1/publication`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
+      timeout: 5000
+    });
+    if (metaRes.ok) {
+      const meta = await metaRes.json();
+      name = meta.name || publication;
+      logo = meta.logo_url || '';
+      if (meta.custom_domain) substackUrl = `https://${meta.custom_domain}`;
+    }
+  } catch (e) { /* use defaults */ }
+
+  return { name, logo, substackUrl, posts: allPosts };
+}
+
+// ─── Fallback: RSS feed (limited to ~20 posts) ──────────────────────────────
+async function fetchViaRSS(publication) {
+  const url = `https://${publication}.substack.com/feed`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
+    redirect: 'follow',
+    timeout: 8000
+  });
+  if (!res.ok) throw new Error(`Could not fetch feed for "${publication}"`);
+  const xml = await res.text();
+  if (!xml.includes('<rss')) throw new Error('Invalid RSS feed');
+
+  const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
+  const channel = parsed.rss.channel;
+  const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
+
+  const posts = items.map(item => {
+    const title = item.title || '';
+    const link = item.link || '';
+    let img = '';
+    if (item.enclosure && item.enclosure.$ && item.enclosure.$.url) {
+      const mt = item.enclosure.$.type || '';
+      if (mt.startsWith('image/') || (!mt && item.enclosure.$.url.match(/\.(jpg|jpeg|png|webp|gif)/i))) {
+        img = item.enclosure.$.url;
+      }
+    }
+    if (!img) {
+      const content = item['content:encoded'] || '';
+      const match = content.match(/<img[^>]+src=["']([^"']+)["']/);
+      if (match) img = match[1];
+    }
+    const utmLink = link.includes('?')
+      ? `${link}&utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`
+      : `${link}?utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`;
+    return { title, link: utmLink, img };
+  }).filter(p => p.title && p.link);
+
+  const name = channel.title || publication;
+  const logo = channel.image?.url || '';
+  const substackUrl = channel.link || `https://${publication}.substack.com`;
+  return { name, logo, substackUrl, posts };
+}
+
+// ─── Try API first, fall back to RSS ─────────────────────────────────────────
+async function fetchSubstackFeed(publication) {
+  try {
+    const result = await fetchViaAPI(publication);
+    if (result.posts.length > 0) return result;
+  } catch (e) { /* API failed, try RSS */ }
+  return await fetchViaRSS(publication);
 }
 
 app.post('/api/register', async (req, res) => {
@@ -225,48 +231,39 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
 
   const styleCSS = {
     broadsheet: `
-      .card { background: #1a1a1a; }
-      .card img { filter: brightness(0.65) saturate(0.9); }
-      .card:hover img, .card:active img { filter: brightness(0.9) saturate(1.1); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: flex-end;
-        text-align: left; padding: 10px;
+        text-align: left; padding: 3.5cqi;
         background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 40%, transparent 100%);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 800;
-        font-size: 15px;
-        color: #fff; line-height: 1.1;
+        font-size: 12cqi;
+        color: #fff; line-height: 1.08;
         text-shadow: 0 1px 4px rgba(0,0,0,0.5);
       }`,
     byline: `
-      .card { background: #1a1a1a; }
-      .card img { filter: brightness(0.65) saturate(0.9); }
-      .card:hover img, .card:active img { filter: brightness(0.9) saturate(1.1); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: flex-end;
-        text-align: left; padding: 10px;
+        text-align: left; padding: 3.5cqi;
         background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.08) 40%, transparent 100%);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
-        font-size: 15px;
-        font-style: italic; color: #fff; line-height: 1.1;
+        font-size: 12cqi;
+        font-style: italic; color: #fff; line-height: 1.08;
         text-shadow: 0 1px 4px rgba(0,0,0,0.5);
       }`,
     billboard: `
-      .card { background: #0a0a0a; }
-      .card img { filter: brightness(0.6) saturate(0.9); }
-      .card:hover img, .card:active img { filter: brightness(0.85) saturate(1.1); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: center; justify-content: center;
-        text-align: center; padding: 10px;
+        text-align: center; padding: 3.5cqi;
         background: rgba(0,0,0,0.2);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
-        font-size: 22px;
-        color: #fff; text-transform: uppercase; line-height: 0.95; letter-spacing: 0.04em;
+        font-size: 16cqi;
+        color: #fff; text-transform: uppercase; line-height: 0.92; letter-spacing: 0.04em;
         text-shadow: 0 2px 8px rgba(0,0,0,0.5);
       }`
   };
@@ -285,22 +282,33 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { background: #fff; font-family: ${fonts.body}; min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
-    header { display: flex; flex-direction: column; align-items: center; padding: 40px 24px 20px; gap: 10px; }
-    .logo { width: clamp(140px, 40vw, 240px); height: auto; display: block; }
-    .site-name { font-weight: 700; font-size: 28px; letter-spacing: -0.02em; color: #1a1a1a; }
-    .site-name.sub { font-size: 15px; font-weight: 400; color: #888; letter-spacing: 0.02em; margin-top: -4px; }
+    header { display: flex; flex-direction: column; align-items: center; padding: 44px 24px 22px; gap: 10px; }
+    .logo { width: clamp(160px, 42vw, 280px); height: auto; display: block; }
+    .site-name { font-weight: 700; font-size: clamp(24px, 5vw, 36px); letter-spacing: -0.02em; color: #1a1a1a; text-align: center; }
+    .site-name.sub { font-size: clamp(14px, 3vw, 18px); font-weight: 400; color: #888; letter-spacing: 0.02em; margin-top: -4px; }
     .subscribe-btn {
-      display: inline-block; padding: 10px 28px; margin-top: 4px;
+      display: inline-block; padding: 11px 30px; margin-top: 6px;
       background: #1a1a1a; color: #fff;
-      font-family: ${fonts.body}; font-weight: 600; font-size: 13px;
+      font-family: ${fonts.body}; font-weight: 600; font-size: 14px;
       text-decoration: none; border-radius: 6px; transition: background 0.2s;
     }
     .subscribe-btn:hover { background: #333; }
     .instruction { font-weight: 300; font-size: 13px; color: #ccc; margin-top: 4px; }
 
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; margin-top: 8px; }
-    .card { position: relative; aspect-ratio: 3/4; overflow: hidden; display: block; text-decoration: none; }
-    .card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.4s ease, transform 0.5s ease; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; margin-top: 10px; }
+    .card {
+      position: relative; aspect-ratio: 3/4; overflow: hidden;
+      display: block; text-decoration: none; background: #1a1a1a;
+      container-type: inline-size;
+    }
+    .card img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      filter: brightness(0.7) saturate(0.9);
+      transition: filter 0.4s ease, transform 0.5s ease;
+    }
+    .card:hover img, .card:active img {
+      filter: brightness(0.95) saturate(1.1); transform: scale(1.03);
+    }
     .overlay { position: absolute; inset: 0; pointer-events: none; }
 
     ${styleCSS[style] || styleCSS.broadsheet}
