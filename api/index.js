@@ -21,11 +21,14 @@ function parseSubstackUrl(input) {
 async function fetchFeedPage(baseUrl, page) {
   const url = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
       redirect: 'follow',
-      timeout: 15000
+      signal: controller.signal
     });
+    clearTimeout(timeout);
     if (!res.ok) return null;
     const xml = await res.text();
     if (!xml.includes('<rss')) return null;
@@ -47,7 +50,6 @@ async function fetchSubstackFeed(publication) {
   let lastError;
   for (const baseUrl of baseUrls) {
     try {
-      // Fetch page 1 first
       const first = await fetchFeedPage(baseUrl, 1);
       if (!first || first.items.length === 0) continue;
 
@@ -56,45 +58,23 @@ async function fetchSubstackFeed(publication) {
       let seenLinks = new Set(first.items.map(i => i.link || ''));
       const firstPageCount = first.items.length;
 
-      // Only attempt pagination if page 1 returned a full page (likely more exist)
+      // Attempt pagination — fetch pages 2-4 in parallel for speed within timeout
       if (firstPageCount >= 10) {
-        // Fetch remaining pages in parallel batches for speed
-        // First try pages 2-5 simultaneously
-        let page = 2;
-        let keepGoing = true;
-        const maxPages = 30;
+        const pagesToFetch = [2, 3, 4, 5];
+        const results = await Promise.all(pagesToFetch.map(p => fetchFeedPage(baseUrl, p)));
 
-        while (keepGoing && page <= maxPages) {
-          // Fetch up to 3 pages at a time for speed
-          const batch = [];
-          for (let i = 0; i < 3 && page + i <= maxPages; i++) {
-            batch.push(fetchFeedPage(baseUrl, page + i));
-          }
-          const results = await Promise.all(batch);
-
-          let batchHadNew = false;
-          for (const result of results) {
-            if (!result || result.items.length === 0) {
-              keepGoing = false;
-              break;
-            }
-            let pageHadNew = false;
-            for (const item of result.items) {
-              const link = item.link || '';
-              if (link && !seenLinks.has(link)) {
-                seenLinks.add(link);
-                allItems.push(item);
-                pageHadNew = true;
-                batchHadNew = true;
-              }
-            }
-            if (!pageHadNew) {
-              keepGoing = false;
-              break;
+        for (const result of results) {
+          if (!result || result.items.length === 0) break;
+          let pageHadNew = false;
+          for (const item of result.items) {
+            const link = item.link || '';
+            if (link && !seenLinks.has(link)) {
+              seenLinks.add(link);
+              allItems.push(item);
+              pageHadNew = true;
             }
           }
-          if (!batchHadNew) keepGoing = false;
-          page += batch.length;
+          if (!pageHadNew) break;
         }
       }
 
@@ -250,14 +230,14 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
       .card:hover img, .card:active img { filter: brightness(0.9) saturate(1.1); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: flex-end;
-        text-align: left; padding: 14px;
+        text-align: left; padding: 10px;
         background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 40%, transparent 100%);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 800;
-        font-size: clamp(16px, 4.5vw, 26px);
+        font-size: 15px;
         color: #fff; line-height: 1.1;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        text-shadow: 0 1px 4px rgba(0,0,0,0.5);
       }`,
     byline: `
       .card { background: #1a1a1a; }
@@ -265,14 +245,14 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
       .card:hover img, .card:active img { filter: brightness(0.9) saturate(1.1); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: flex-end;
-        text-align: left; padding: 14px;
+        text-align: left; padding: 10px;
         background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.08) 40%, transparent 100%);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
-        font-size: clamp(16px, 4.5vw, 26px);
+        font-size: 15px;
         font-style: italic; color: #fff; line-height: 1.1;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        text-shadow: 0 1px 4px rgba(0,0,0,0.5);
       }`,
     billboard: `
       .card { background: #0a0a0a; }
@@ -280,12 +260,12 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
       .card:hover img, .card:active img { filter: brightness(0.85) saturate(1.1); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: center; justify-content: center;
-        text-align: center; padding: 14px;
+        text-align: center; padding: 10px;
         background: rgba(0,0,0,0.2);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
-        font-size: clamp(22px, 6.5vw, 38px);
+        font-size: 22px;
         color: #fff; text-transform: uppercase; line-height: 0.95; letter-spacing: 0.04em;
         text-shadow: 0 2px 8px rgba(0,0,0,0.5);
       }`
@@ -305,21 +285,21 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { background: #fff; font-family: ${fonts.body}; min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
-    header { display: flex; flex-direction: column; align-items: center; padding: 40px 24px 20px; gap: 8px; }
-    .logo { width: clamp(80px, 20vw, 120px); height: auto; display: block; }
-    .site-name { font-weight: 700; font-size: clamp(22px, 5vw, 32px); letter-spacing: -0.02em; color: #1a1a1a; }
-    .site-name.sub { font-size: clamp(13px, 2.8vw, 16px); font-weight: 400; color: #888; letter-spacing: 0.02em; margin-top: -4px; }
+    header { display: flex; flex-direction: column; align-items: center; padding: 40px 24px 20px; gap: 10px; }
+    .logo { width: clamp(140px, 40vw, 240px); height: auto; display: block; }
+    .site-name { font-weight: 700; font-size: 28px; letter-spacing: -0.02em; color: #1a1a1a; }
+    .site-name.sub { font-size: 15px; font-weight: 400; color: #888; letter-spacing: 0.02em; margin-top: -4px; }
     .subscribe-btn {
-      display: inline-block; padding: 9px 22px; margin-top: 4px;
+      display: inline-block; padding: 10px 28px; margin-top: 4px;
       background: #1a1a1a; color: #fff;
-      font-family: ${fonts.body}; font-weight: 600; font-size: 12px;
+      font-family: ${fonts.body}; font-weight: 600; font-size: 13px;
       text-decoration: none; border-radius: 6px; transition: background 0.2s;
     }
     .subscribe-btn:hover { background: #333; }
-    .instruction { font-weight: 300; font-size: 12px; color: #ccc; margin-top: 2px; }
+    .instruction { font-weight: 300; font-size: 13px; color: #ccc; margin-top: 4px; }
 
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; margin-top: 6px; }
-    .card { position: relative; aspect-ratio: 9/16; overflow: hidden; display: block; text-decoration: none; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; margin-top: 8px; }
+    .card { position: relative; aspect-ratio: 3/4; overflow: hidden; display: block; text-decoration: none; }
     .card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.4s ease, transform 0.5s ease; }
     .overlay { position: absolute; inset: 0; pointer-events: none; }
 
@@ -328,8 +308,6 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
     footer { text-align: center; padding: 36px 24px; font-size: 11px; color: #ccc; letter-spacing: 0.04em; }
     footer a { color: #ccc; text-decoration: none; }
     footer a:hover { color: #999; }
-
-    @media (max-width: 480px) { header { padding: 28px 16px 16px; } }
   </style>
 </head>
 <body>
