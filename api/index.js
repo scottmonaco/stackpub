@@ -54,7 +54,6 @@ async function fetchSubstackFeed(publication) {
         if (!result || result.items.length === 0) break;
         if (!channelMeta) channelMeta = result.channel;
 
-        // Check for duplicates — Substack repeats last page when you go past the end
         let newCount = 0;
         for (const item of result.items) {
           const link = item.link || item.guid?._ || item.guid || '';
@@ -64,9 +63,7 @@ async function fetchSubstackFeed(publication) {
             newCount++;
           }
         }
-        // If no new items found, we've hit the end
         if (newCount === 0) break;
-
         page++;
       }
 
@@ -127,15 +124,13 @@ app.post('/api/register', async (req, res) => {
   try {
     const feed = await fetchSubstackFeed(slug);
     let posts = feed.posts;
-    if (excludeNoImage) {
-      posts = posts.filter(p => p.img);
-    }
+    if (excludeNoImage) posts = posts.filter(p => p.img);
 
     pages[slug] = {
       slug,
       displayName: displayName || feed.name || slug,
       logoUrl: logoUrl || feed.logo || '',
-      imageStyle: imageStyle || 'clean',
+      imageStyle: imageStyle || 'broadsheet',
       excludeNoImage: !!excludeNoImage,
       substackUrl: feed.substackUrl,
       posts,
@@ -180,21 +175,20 @@ app.get('/:slug', (req, res) => {
   res.send(renderPage(page));
 });
 
-// ─── Font config per style ───────────────────────────────────────────────────
 const styleFonts = {
-  clean: {
-    import: "family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400",
-    title: "'Space Grotesk', sans-serif",
+  broadsheet: {
+    import: "family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,600",
+    title: "'Bricolage Grotesque', sans-serif",
     body: "'DM Sans', sans-serif"
   },
-  bold: {
-    import: "family=Anton&family=DM+Sans:opsz,wght@9..40,400",
-    title: "'Anton', sans-serif",
+  byline: {
+    import: "family=Newsreader:ital,wght@0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,600",
+    title: "'Newsreader', serif",
     body: "'DM Sans', sans-serif"
   },
-  editorial: {
-    import: "family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400",
-    title: "'Playfair Display', serif",
+  billboard: {
+    import: "family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,600",
+    title: "'Bebas Neue', sans-serif",
     body: "'DM Sans', sans-serif"
   }
 };
@@ -204,8 +198,8 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
     ? `<img class="logo" src="${logoUrl}" alt="${esc(displayName)}" />\n    <div class="site-name sub">${esc(displayName)}</div>`
     : `<div class="site-name">${esc(displayName)}</div>`;
 
-  const style = imageStyle || 'clean';
-  const fonts = styleFonts[style] || styleFonts.clean;
+  const style = imageStyle || 'broadsheet';
+  const fonts = styleFonts[style] || styleFonts.broadsheet;
 
   const cards = posts.map(p => {
     const imgTag = p.img
@@ -221,46 +215,47 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
   }).join('\n');
 
   const styleCSS = {
-    clean: `
+    broadsheet: `
       .card { background: #1a1a1a; }
-      .card img { filter: brightness(0.45); }
-      .card:hover img { filter: brightness(0.58); transform: scale(1.03); }
-      .card .overlay {
-        display: flex; align-items: center; justify-content: center;
-        text-align: center; padding: 12px;
-      }
-      .card .card-title {
-        font-family: ${fonts.title}; font-weight: 500;
-        font-size: clamp(18px, 5.5vw, 28px);
-        color: #fff; line-height: 1.15; letter-spacing: -0.02em;
-      }`,
-    bold: `
-      .card { background: #0a0a0a; }
-      .card img { filter: brightness(0.38); }
-      .card:hover img { filter: brightness(0.52); transform: scale(1.03); }
+      .card img { filter: brightness(0.40); }
+      .card:hover img { filter: brightness(0.55); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: flex-end;
-        text-align: left; padding: 12px 14px;
-        background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%);
+        text-align: left; padding: 14px;
+        background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%);
       }
       .card .card-title {
-        font-family: ${fonts.title}; font-weight: 400;
-        font-size: clamp(20px, 6vw, 34px);
-        color: #fff; text-transform: uppercase; line-height: 1.0; letter-spacing: 0.01em;
+        font-family: ${fonts.title}; font-weight: 800;
+        font-size: clamp(18px, 5.5vw, 28px);
+        color: #fff; line-height: 1.1;
       }`,
-    editorial: `
+    byline: `
       .card { background: #1a1a1a; }
-      .card img { filter: brightness(0.42) grayscale(15%); }
+      .card img { filter: brightness(0.42) grayscale(10%); }
       .card:hover img { filter: brightness(0.58) grayscale(0%); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: flex-end;
         text-align: left; padding: 14px;
-        background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 50%);
+        background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
-        font-size: clamp(18px, 5.5vw, 30px);
-        font-style: italic; color: #fff; line-height: 1.1; letter-spacing: -0.01em;
+        font-size: clamp(18px, 5.5vw, 28px);
+        font-style: italic; color: #fff; line-height: 1.12;
+      }`,
+    billboard: `
+      .card { background: #0a0a0a; }
+      .card img { filter: brightness(0.40); }
+      .card:hover img { filter: brightness(0.55); transform: scale(1.03); }
+      .card .overlay {
+        display: flex; align-items: center; justify-content: center;
+        text-align: center; padding: 14px;
+        background: rgba(0,0,0,0.35);
+      }
+      .card .card-title {
+        font-family: ${fonts.title}; font-weight: 400;
+        font-size: clamp(24px, 7vw, 40px);
+        color: #fff; text-transform: uppercase; line-height: 0.95; letter-spacing: 0.04em;
       }`
   };
 
@@ -281,7 +276,7 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
     header { display: flex; flex-direction: column; align-items: center; padding: 40px 24px 20px; gap: 8px; }
     .logo { width: clamp(80px, 20vw, 120px); height: auto; display: block; }
     .site-name { font-weight: 700; font-size: clamp(22px, 5vw, 32px); letter-spacing: -0.02em; color: #1a1a1a; }
-    .site-name.sub { font-size: clamp(13px, 2.8vw, 16px); font-weight: 400; color: #888; letter-spacing: 0.02em; }
+    .site-name.sub { font-size: clamp(13px, 2.8vw, 16px); font-weight: 400; color: #888; letter-spacing: 0.02em; margin-top: -4px; }
     .subscribe-btn {
       display: inline-block; padding: 9px 22px; margin-top: 4px;
       background: #1a1a1a; color: #fff;
@@ -296,15 +291,13 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
     .card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.4s ease, transform 0.5s ease; }
     .overlay { position: absolute; inset: 0; pointer-events: none; }
 
-    ${styleCSS[style] || styleCSS.clean}
+    ${styleCSS[style] || styleCSS.broadsheet}
 
     footer { text-align: center; padding: 36px 24px; font-size: 11px; color: #ccc; letter-spacing: 0.04em; }
     footer a { color: #ccc; text-decoration: none; }
     footer a:hover { color: #999; }
 
-    @media (max-width: 480px) {
-      header { padding: 28px 16px 16px; }
-    }
+    @media (max-width: 480px) { header { padding: 28px 16px 16px; } }
   </style>
 </head>
 <body>
