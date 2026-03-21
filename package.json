@@ -1,0 +1,15 @@
+{
+  "name": "stackpub",
+  "version": "2.0.0",
+  "description": "Visual portfolio pages for Substack writers",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "node api/index.js",
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
+    "xml2js": "^0.6.2"
+  }
+}
