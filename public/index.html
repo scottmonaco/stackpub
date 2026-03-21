@@ -6,7 +6,7 @@
   <title>stack.pub — Visual portfolio pages for Substack writers</title>
   <meta name="description" content="Turn your Substack into a beautiful link-in-bio grid. Paste your URL, pick a style, share the link." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Space+Grotesk:wght@400;500;600;700&family=Anton&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Bricolage+Grotesque:wght@700;800&family=Newsreader:ital,wght@0,600;1,400&family=Bebas+Neue&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { background: #fff; }
@@ -63,48 +63,39 @@
       background-size: cover;
     }
 
-    /* Clean preview — Space Grotesk, centered */
-    .preview-clean .overlay {
+    .preview-broadsheet .overlay {
       position: absolute; inset: 0;
-      background: rgba(0,0,0,0.45);
-      display: flex; align-items: center; justify-content: center;
-      padding: 12px; text-align: center;
+      background: linear-gradient(to top, rgba(0,0,0,0.68) 0%, transparent 55%);
+      display: flex; align-items: flex-end; padding: 12px;
     }
-    .preview-clean .overlay .t {
-      font-family: 'Space Grotesk', sans-serif; font-weight: 500;
-      font-size: clamp(16px, 4vw, 20px);
-      color: #fff; line-height: 1.15; letter-spacing: -0.02em;
+    .preview-broadsheet .overlay .t {
+      font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
+      font-size: clamp(14px, 3.5vw, 19px); color: #fff; line-height: 1.1;
     }
 
-    /* Bold preview — Anton, bottom-left, uppercase */
-    .preview-bold .overlay {
+    .preview-byline .overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.15) 50%, transparent 100%);
-      display: flex; align-items: flex-end;
-      padding: 10px 12px; text-align: left;
+      background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, transparent 50%);
+      display: flex; align-items: flex-end; padding: 12px;
     }
-    .preview-bold .overlay .t {
-      font-family: 'Anton', sans-serif; font-weight: 400;
-      font-size: clamp(18px, 5vw, 24px);
-      color: #fff; text-transform: uppercase; line-height: 1.0; letter-spacing: 0.01em;
+    .preview-byline .overlay .t {
+      font-family: 'Newsreader', serif; font-weight: 400;
+      font-size: clamp(14px, 3.5vw, 19px); font-style: italic; color: #fff; line-height: 1.12;
     }
 
-    /* Editorial preview — Playfair Display italic, bottom-left */
-    .preview-editorial .overlay {
+    .preview-billboard .overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 50%, transparent 100%);
-      display: flex; align-items: flex-end;
-      padding: 10px 12px; text-align: left;
+      background: rgba(0,0,0,0.48);
+      display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px;
     }
-    .preview-editorial .overlay .t {
-      font-family: 'Playfair Display', serif; font-weight: 400;
-      font-size: clamp(16px, 4.5vw, 22px);
-      font-style: italic; color: #fff; line-height: 1.1; letter-spacing: -0.01em;
+    .preview-billboard .overlay .t {
+      font-family: 'Bebas Neue', sans-serif; font-weight: 400;
+      font-size: clamp(18px, 5vw, 26px); color: #fff; text-transform: uppercase;
+      line-height: 0.95; letter-spacing: 0.04em;
     }
 
     .style-info { padding: 10px 12px 12px; text-align: center; }
-    .style-info .name { font-weight: 600; font-size: 13px; color: #1a1a1a; margin-bottom: 2px; }
-    .style-info .desc { font-size: 11px; color: #999; line-height: 1.3; }
+    .style-info .name { font-weight: 600; font-size: 14px; color: #1a1a1a; }
 
     .toggle-row {
       display: flex; align-items: center; gap: 10px;
@@ -183,16 +174,16 @@
       </div>
       <span class="wordmark">stack.pub</span>
     </div>
-    <h1>A visual portfolio for your Substack</h1>
-    <p>Paste your URL, pick a card style, and get a shareable grid page that updates every time you publish.</p>
+    <h1>A visual portfolio for your newsletter</h1>
+    <p>Paste your publication URL, pick a card style, and get a shareable grid page that updates every time you publish.</p>
   </div>
 
   <div class="form-card" id="formCard">
 
     <div class="field">
-      <label>Substack URL</label>
+      <label>Publication URL</label>
       <input type="text" id="substackUrl" placeholder="https://yourname.substack.com" autocomplete="off" />
-      <div class="hint">Your Substack URL or custom domain</div>
+      <div class="hint">Your publication URL or custom domain</div>
     </div>
 
     <div class="row">
@@ -203,7 +194,7 @@
       <div class="field">
         <label>Logo image URL <span style="font-weight:400;color:#aaa">(optional)</span></label>
         <input type="text" id="logoUrl" placeholder="https://..." />
-        <div class="hint">Right-click your logo anywhere online → Copy image address</div>
+        <div class="hint">Right-click your logo online, copy image address</div>
       </div>
     </div>
 
@@ -211,42 +202,39 @@
       <label>Card style</label>
       <div class="style-grid">
 
-        <div class="style-card active" data-style="clean" onclick="selectStyle('clean')">
-          <div class="style-preview preview-clean">
+        <div class="style-card active" data-style="broadsheet" onclick="selectStyle('broadsheet')">
+          <div class="style-preview preview-broadsheet">
             <div class="bg"></div>
             <div class="overlay">
-              <span class="t">Breakfast is Included</span>
+              <span class="t">Your Sample Article Title Goes Here</span>
             </div>
           </div>
           <div class="style-info">
-            <div class="name">Clean</div>
-            <div class="desc">Geometric, centered</div>
+            <div class="name">Broadsheet</div>
           </div>
         </div>
 
-        <div class="style-card" data-style="bold" onclick="selectStyle('bold')">
-          <div class="style-preview preview-bold">
+        <div class="style-card" data-style="byline" onclick="selectStyle('byline')">
+          <div class="style-preview preview-byline">
             <div class="bg"></div>
             <div class="overlay">
-              <span class="t">Breakfast is Included</span>
+              <span class="t">Your Sample Article Title Goes Here</span>
             </div>
           </div>
           <div class="style-info">
-            <div class="name">Bold</div>
-            <div class="desc">Heavy impact type</div>
+            <div class="name">Byline</div>
           </div>
         </div>
 
-        <div class="style-card" data-style="editorial" onclick="selectStyle('editorial')">
-          <div class="style-preview preview-editorial">
+        <div class="style-card" data-style="billboard" onclick="selectStyle('billboard')">
+          <div class="style-preview preview-billboard">
             <div class="bg"></div>
             <div class="overlay">
-              <span class="t">Breakfast is Included</span>
+              <span class="t">Your Sample Article Title Goes Here</span>
             </div>
           </div>
           <div class="style-info">
-            <div class="name">Editorial</div>
-            <div class="desc">Elegant serif italic</div>
+            <div class="name">Billboard</div>
           </div>
         </div>
 
@@ -282,15 +270,15 @@
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
-        <div class="step-text"><strong>Paste your Substack URL</strong> — we pull your posts, cover images, and links automatically from your public RSS feed.</div>
+        <div class="step-text"><strong>Paste your publication URL</strong> — we pull your posts, cover images, and links automatically from your public RSS feed.</div>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <div class="step-text"><strong>Pick a card style</strong> — three distinct typographic styles for how your titles sit on each cover image.</div>
+        <div class="step-text"><strong>Pick a card style</strong> — Broadsheet, Byline, or Billboard. Three distinct looks for your grid.</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <div class="step-text"><strong>Share the link</strong> — every tap goes back to your Substack with UTM tracking so you can see it in your dashboard.</div>
+        <div class="step-text"><strong>Share the link</strong> — every tap goes back to your publication with UTM tracking so you can see it in your dashboard.</div>
       </div>
       <div class="step">
         <div class="step-num">4</div>
@@ -303,7 +291,7 @@
 
   <script>
     let liveUrl = '';
-    let selectedStyle = 'clean';
+    let selectedStyle = 'broadsheet';
 
     function selectStyle(style) {
       selectedStyle = style;
@@ -322,7 +310,7 @@
 
       err.style.display = 'none';
 
-      if (!substackUrl) return showError('Please enter your Substack URL.');
+      if (!substackUrl) return showError('Please enter your publication URL.');
       if (!displayName) return showError('Please enter a display name.');
 
       btn.disabled = true;
