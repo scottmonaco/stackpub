@@ -18,106 +18,133 @@ function parseSubstackUrl(input) {
   return clean.split('/')[0];
 }
 
+// ─── Determine base URL (custom domain vs substack subdomain) ────────────────
+function getBaseUrls(publication) {
+  const isCustomDomain = publication.includes('.');
+  if (isCustomDomain) {
+    // Custom domain — hit it directly, and also try substack subdomain as fallback
+    return [`https://${publication}`];
+  }
+  return [`https://${publication}.substack.com`];
+}
+
 // ─── Use Substack's undocumented API for full post archive ───────────────────
 async function fetchViaAPI(publication) {
-  const baseUrl = `https://${publication}.substack.com`;
-  let allPosts = [];
-  let offset = 0;
-  const limit = 50;
-  const maxPosts = 500;
+  const baseUrls = getBaseUrls(publication);
+  let lastError;
 
-  while (offset < maxPosts) {
-    const url = `${baseUrl}/api/v1/archive?sort=new&limit=${limit}&offset=${offset}`;
+  for (const baseUrl of baseUrls) {
     try {
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
-        timeout: 8000
-      });
-      if (!res.ok) throw new Error('API not available');
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) break;
+      let allPosts = [];
+      let offset = 0;
+      const limit = 50;
+      const maxPosts = 500;
 
-      for (const post of data) {
-        const title = post.title || '';
-        const slug = post.slug || '';
-        const link = `${baseUrl}/p/${slug}`;
-        const img = post.cover_image || '';
+      while (offset < maxPosts) {
+        const url = `${baseUrl}/api/v1/archive?sort=new&limit=${limit}&offset=${offset}`;
+        const res = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
+          timeout: 8000
+        });
+        if (!res.ok) throw new Error('API not available');
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) break;
 
-        if (title && slug) {
-          const utmLink = `${link}?utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`;
-          allPosts.push({ title, link: utmLink, img });
+        for (const post of data) {
+          const title = post.title || '';
+          const slug = post.slug || '';
+          const link = `${baseUrl}/p/${slug}`;
+          const img = post.cover_image || '';
+
+          if (title && slug) {
+            const utmLink = `${link}?utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`;
+            allPosts.push({ title, link: utmLink, img });
+          }
         }
+
+        if (data.length < limit) break;
+        offset += limit;
       }
 
-      if (data.length < limit) break;
-      offset += limit;
+      if (allPosts.length === 0) continue;
+
+      let name = publication;
+      let logo = '';
+      let substackUrl = baseUrl;
+      try {
+        const metaRes = await fetch(`${baseUrl}/api/v1/publication`, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
+          timeout: 5000
+        });
+        if (metaRes.ok) {
+          const meta = await metaRes.json();
+          name = meta.name || publication;
+          logo = meta.logo_url || '';
+          if (meta.custom_domain) substackUrl = `https://${meta.custom_domain}`;
+        }
+      } catch (e) { /* use defaults */ }
+
+      return { name, logo, substackUrl, posts: allPosts };
     } catch (e) {
-      if (offset === 0) throw e; // First page failed, API not available
-      break; // Later page failed, return what we have
+      lastError = e;
     }
   }
-
-  // Get publication meta from the homepage
-  let name = publication;
-  let logo = '';
-  let substackUrl = `https://${publication}.substack.com`;
-  try {
-    const metaRes = await fetch(`${baseUrl}/api/v1/publication`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
-      timeout: 5000
-    });
-    if (metaRes.ok) {
-      const meta = await metaRes.json();
-      name = meta.name || publication;
-      logo = meta.logo_url || '';
-      if (meta.custom_domain) substackUrl = `https://${meta.custom_domain}`;
-    }
-  } catch (e) { /* use defaults */ }
-
-  return { name, logo, substackUrl, posts: allPosts };
+  throw lastError || new Error('API not available');
 }
 
 // ─── Fallback: RSS feed (limited to ~20 posts) ──────────────────────────────
 async function fetchViaRSS(publication) {
-  const url = `https://${publication}.substack.com/feed`;
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
-    redirect: 'follow',
-    timeout: 8000
-  });
-  if (!res.ok) throw new Error(`Could not fetch feed for "${publication}"`);
-  const xml = await res.text();
-  if (!xml.includes('<rss')) throw new Error('Invalid RSS feed');
+  const isCustomDomain = publication.includes('.');
+  const urls = isCustomDomain
+    ? [`https://${publication}/feed`]
+    : [`https://${publication}.substack.com/feed`];
 
-  const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
-  const channel = parsed.rss.channel;
-  const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
+  let lastError;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
+        redirect: 'follow',
+        timeout: 8000
+      });
+      if (!res.ok) throw new Error(`Could not fetch feed for "${publication}"`);
+      const xml = await res.text();
+      if (!xml.includes('<rss')) throw new Error('Invalid RSS feed');
 
-  const posts = items.map(item => {
-    const title = item.title || '';
-    const link = item.link || '';
-    let img = '';
-    if (item.enclosure && item.enclosure.$ && item.enclosure.$.url) {
-      const mt = item.enclosure.$.type || '';
-      if (mt.startsWith('image/') || (!mt && item.enclosure.$.url.match(/\.(jpg|jpeg|png|webp|gif)/i))) {
-        img = item.enclosure.$.url;
-      }
+      const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
+      const channel = parsed.rss.channel;
+      const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
+
+      const posts = items.map(item => {
+        const title = item.title || '';
+        const link = item.link || '';
+        let img = '';
+        if (item.enclosure && item.enclosure.$ && item.enclosure.$.url) {
+          const mt = item.enclosure.$.type || '';
+          if (mt.startsWith('image/') || (!mt && item.enclosure.$.url.match(/\.(jpg|jpeg|png|webp|gif)/i))) {
+            img = item.enclosure.$.url;
+          }
+        }
+        if (!img) {
+          const content = item['content:encoded'] || '';
+          const match = content.match(/<img[^>]+src=["']([^"']+)["']/);
+          if (match) img = match[1];
+        }
+        const utmLink = link.includes('?')
+          ? `${link}&utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`
+          : `${link}?utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`;
+        return { title, link: utmLink, img };
+      }).filter(p => p.title && p.link);
+
+      const name = channel.title || publication;
+      const logo = channel.image?.url || '';
+      const substackUrl = channel.link || `https://${publication}${publication.includes('.') ? '' : '.substack.com'}`;
+      return { name, logo, substackUrl, posts };
+    } catch (e) {
+      lastError = e;
     }
-    if (!img) {
-      const content = item['content:encoded'] || '';
-      const match = content.match(/<img[^>]+src=["']([^"']+)["']/);
-      if (match) img = match[1];
-    }
-    const utmLink = link.includes('?')
-      ? `${link}&utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`
-      : `${link}?utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`;
-    return { title, link: utmLink, img };
-  }).filter(p => p.title && p.link);
-
-  const name = channel.title || publication;
-  const logo = channel.image?.url || '';
-  const substackUrl = channel.link || `https://${publication}.substack.com`;
-  return { name, logo, substackUrl, posts };
+  }
+  throw lastError || new Error(`Could not fetch feed for "${publication}"`);
 }
 
 // ─── Try API first, fall back to RSS ─────────────────────────────────────────
