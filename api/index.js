@@ -20,18 +20,22 @@ function parseSubstackUrl(input) {
 
 async function fetchFeedPage(baseUrl, page) {
   const url = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
-    redirect: 'follow',
-    timeout: 10000
-  });
-  if (!res.ok) return null;
-  const xml = await res.text();
-  if (!xml.includes('<rss')) return null;
-  const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
-  const channel = parsed.rss.channel;
-  const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
-  return { channel, items };
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; stackpub/1.0)' },
+      redirect: 'follow',
+      timeout: 15000
+    });
+    if (!res.ok) return null;
+    const xml = await res.text();
+    if (!xml.includes('<rss')) return null;
+    const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
+    const channel = parsed.rss.channel;
+    const items = Array.isArray(channel.item) ? channel.item : channel.item ? [channel.item] : [];
+    return { channel, items };
+  } catch (e) {
+    return null;
+  }
 }
 
 async function fetchSubstackFeed(publication) {
@@ -43,31 +47,56 @@ async function fetchSubstackFeed(publication) {
   let lastError;
   for (const baseUrl of baseUrls) {
     try {
-      let allItems = [];
-      let seenLinks = new Set();
-      let page = 1;
-      let channelMeta = null;
-      const maxPages = 50;
+      // Fetch page 1 first
+      const first = await fetchFeedPage(baseUrl, 1);
+      if (!first || first.items.length === 0) continue;
 
-      while (page <= maxPages) {
-        const result = await fetchFeedPage(baseUrl, page);
-        if (!result || result.items.length === 0) break;
-        if (!channelMeta) channelMeta = result.channel;
+      const channelMeta = first.channel;
+      let allItems = [...first.items];
+      let seenLinks = new Set(first.items.map(i => i.link || ''));
+      const firstPageCount = first.items.length;
 
-        let newCount = 0;
-        for (const item of result.items) {
-          const link = item.link || item.guid?._ || item.guid || '';
-          if (!seenLinks.has(link)) {
-            seenLinks.add(link);
-            allItems.push(item);
-            newCount++;
+      // Only attempt pagination if page 1 returned a full page (likely more exist)
+      if (firstPageCount >= 10) {
+        // Fetch remaining pages in parallel batches for speed
+        // First try pages 2-5 simultaneously
+        let page = 2;
+        let keepGoing = true;
+        const maxPages = 30;
+
+        while (keepGoing && page <= maxPages) {
+          // Fetch up to 3 pages at a time for speed
+          const batch = [];
+          for (let i = 0; i < 3 && page + i <= maxPages; i++) {
+            batch.push(fetchFeedPage(baseUrl, page + i));
           }
-        }
-        if (newCount === 0) break;
-        page++;
-      }
+          const results = await Promise.all(batch);
 
-      if (!channelMeta || allItems.length === 0) continue;
+          let batchHadNew = false;
+          for (const result of results) {
+            if (!result || result.items.length === 0) {
+              keepGoing = false;
+              break;
+            }
+            let pageHadNew = false;
+            for (const item of result.items) {
+              const link = item.link || '';
+              if (link && !seenLinks.has(link)) {
+                seenLinks.add(link);
+                allItems.push(item);
+                pageHadNew = true;
+                batchHadNew = true;
+              }
+            }
+            if (!pageHadNew) {
+              keepGoing = false;
+              break;
+            }
+          }
+          if (!batchHadNew) keepGoing = false;
+          page += batch.length;
+        }
+      }
 
       const posts = allItems.map(item => {
         const title = item.title || '';
@@ -116,7 +145,7 @@ async function fetchSubstackFeed(publication) {
 
 app.post('/api/register', async (req, res) => {
   const { substackUrl, displayName, logoUrl, imageStyle, excludeNoImage } = req.body;
-  if (!substackUrl) return res.status(400).json({ error: 'Substack URL is required' });
+  if (!substackUrl) return res.status(400).json({ error: 'Publication URL is required' });
 
   const slug = parseSubstackUrl(substackUrl);
   if (!slug) return res.status(400).json({ error: 'Could not parse that URL' });
@@ -217,45 +246,48 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
   const styleCSS = {
     broadsheet: `
       .card { background: #1a1a1a; }
-      .card img { filter: brightness(0.40); }
-      .card:hover img { filter: brightness(0.55); transform: scale(1.03); }
+      .card img { filter: brightness(0.65) saturate(0.9); }
+      .card:hover img, .card:active img { filter: brightness(0.9) saturate(1.1); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: flex-end;
         text-align: left; padding: 14px;
-        background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%);
+        background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 40%, transparent 100%);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 800;
-        font-size: clamp(18px, 5.5vw, 28px);
+        font-size: clamp(16px, 4.5vw, 26px);
         color: #fff; line-height: 1.1;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.4);
       }`,
     byline: `
       .card { background: #1a1a1a; }
-      .card img { filter: brightness(0.42) grayscale(10%); }
-      .card:hover img { filter: brightness(0.58) grayscale(0%); transform: scale(1.03); }
+      .card img { filter: brightness(0.65) saturate(0.9); }
+      .card:hover img, .card:active img { filter: brightness(0.9) saturate(1.1); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: flex-end;
         text-align: left; padding: 14px;
-        background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%);
+        background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.08) 40%, transparent 100%);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
-        font-size: clamp(18px, 5.5vw, 28px);
-        font-style: italic; color: #fff; line-height: 1.12;
+        font-size: clamp(16px, 4.5vw, 26px);
+        font-style: italic; color: #fff; line-height: 1.1;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.4);
       }`,
     billboard: `
       .card { background: #0a0a0a; }
-      .card img { filter: brightness(0.40); }
-      .card:hover img { filter: brightness(0.55); transform: scale(1.03); }
+      .card img { filter: brightness(0.6) saturate(0.9); }
+      .card:hover img, .card:active img { filter: brightness(0.85) saturate(1.1); transform: scale(1.03); }
       .card .overlay {
         display: flex; align-items: center; justify-content: center;
         text-align: center; padding: 14px;
-        background: rgba(0,0,0,0.35);
+        background: rgba(0,0,0,0.2);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
-        font-size: clamp(24px, 7vw, 40px);
+        font-size: clamp(22px, 6.5vw, 38px);
         color: #fff; text-transform: uppercase; line-height: 0.95; letter-spacing: 0.04em;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
       }`
   };
 
@@ -287,7 +319,7 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
     .instruction { font-weight: 300; font-size: 12px; color: #ccc; margin-top: 2px; }
 
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; margin-top: 6px; }
-    .card { position: relative; aspect-ratio: 4/5; overflow: hidden; display: block; text-decoration: none; }
+    .card { position: relative; aspect-ratio: 9/16; overflow: hidden; display: block; text-decoration: none; }
     .card img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.4s ease, transform 0.5s ease; }
     .overlay { position: absolute; inset: 0; pointer-events: none; }
 
