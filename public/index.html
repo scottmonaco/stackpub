@@ -11,7 +11,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { background: #fff; }
     body { font-family: 'DM Sans', -apple-system, sans-serif; color: #1a1a1a; min-height: 100vh; -webkit-font-smoothing: antialiased; }
-
+ 
     /* ── Hero ── */
     .hero { max-width: 580px; margin: 0 auto; padding: 72px 24px 44px; text-align: center; }
     .logo-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px; }
@@ -20,14 +20,14 @@
     .wordmark { font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: #1a1a1a; }
     .hero h1 { font-family: 'Fraunces', serif; font-size: clamp(28px, 5vw, 40px); font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 12px; color: #111; }
     .hero p { font-size: 17px; color: #666; line-height: 1.6; max-width: 440px; margin: 0 auto; }
-
+ 
     /* ── Form Card ── */
     .form-card {
       max-width: 560px; margin: 0 auto; padding: 32px;
       background: #fff; border: 1px solid #eee; border-radius: 16px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.06);
     }
-
+ 
     .field { margin-bottom: 20px; }
     .field label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; }
     .field input {
@@ -41,20 +41,20 @@
     .field .hint { font-size: 12px; color: #aaa; margin-top: 5px; }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
-
+ 
     /* ── Style Picker ── */
     .style-section { margin-bottom: 24px; }
     .style-section > label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 12px; }
     .style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
     @media (max-width: 520px) { .style-grid { gap: 10px; } }
-
+ 
     .style-card {
       border: 2px solid #eee; border-radius: 12px; overflow: hidden;
       cursor: pointer; transition: all 0.2s; background: #fff;
     }
     .style-card:hover { border-color: #ccc; }
     .style-card.active { border-color: #1a1a1a; box-shadow: 0 0 0 3px rgba(26,26,26,0.08); }
-
+ 
     /* Mockup preview area */
     .style-preview {
       aspect-ratio: 3/4; position: relative; overflow: hidden;
@@ -65,7 +65,7 @@
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='530'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23b8a99a'/%3E%3Cstop offset='100%25' stop-color='%23897766'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='400' height='530'/%3E%3Ccircle cx='320' cy='80' r='60' fill='%23d4c5b5' opacity='0.4'/%3E%3Crect x='0' y='350' width='400' height='180' fill='%23a08c7a' opacity='0.3'/%3E%3C/svg%3E");
       background-size: cover;
     }
-
+ 
     /* Style 1: Clean — centered white text on dark overlay */
     .preview-clean .overlay {
       position: absolute; inset: 0;
@@ -77,11 +77,7 @@
       font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: clamp(11px, 2.8vw, 14px);
       color: #fff; letter-spacing: 0.01em; line-height: 1.35;
     }
-    .preview-clean .overlay .s {
-      font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: clamp(8px, 2vw, 10px);
-      color: rgba(255,255,255,0.6); margin-top: 6px; letter-spacing: 0.02em;
-    }
-
+ 
     /* Style 2: Bold — big uppercase, gradient from bottom */
     .preview-bold .overlay {
       position: absolute; inset: 0;
@@ -93,11 +89,7 @@
       font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: clamp(11px, 2.8vw, 13px);
       color: #fff; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.25;
     }
-    .preview-bold .overlay .s {
-      font-family: 'DM Sans', sans-serif; font-weight: 400; font-size: clamp(7px, 1.8vw, 9px);
-      color: rgba(255,255,255,0.5); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.08em;
-    }
-
+ 
     /* Style 3: Editorial — serif, elegant */
     .preview-editorial .overlay {
       position: absolute; inset: 0;
@@ -109,15 +101,22 @@
       font-family: 'Fraunces', serif; font-weight: 400; font-size: clamp(12px, 3vw, 15px); font-style: italic;
       color: #fff; line-height: 1.3; letter-spacing: -0.01em;
     }
-    .preview-editorial .overlay .s {
-      font-family: 'DM Sans', sans-serif; font-weight: 400; font-size: clamp(7px, 1.8vw, 9px);
-      color: rgba(255,255,255,0.45); margin-top: 5px; letter-spacing: 0.06em; text-transform: uppercase;
-    }
-
+ 
     .style-info { padding: 10px 12px 12px; text-align: center; }
     .style-info .name { font-weight: 600; font-size: 13px; color: #1a1a1a; margin-bottom: 2px; }
     .style-info .desc { font-size: 11px; color: #999; line-height: 1.3; }
-
+ 
+    /* ── Checkbox ── */
+    .toggle-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 24px; cursor: pointer; user-select: none;
+    }
+    .toggle-row input[type="checkbox"] {
+      width: 18px; height: 18px; accent-color: #1a1a1a; cursor: pointer; flex-shrink: 0;
+    }
+    .toggle-row span { font-size: 14px; color: #555; }
+    .toggle-row .toggle-hint { font-size: 12px; color: #aaa; margin-left: auto; }
+ 
     /* ── Button ── */
     .submit-btn {
       width: 100%; padding: 14px;
@@ -128,9 +127,9 @@
     .submit-btn:hover { background: #333; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .submit-btn:active { transform: translateY(0); }
     .submit-btn:disabled { opacity: 0.35; cursor: default; transform: none; box-shadow: none; }
-
+ 
     .error { font-size: 13px; color: #e05252; margin-top: 14px; display: none; text-align: center; }
-
+ 
     /* ── Success State ── */
     .success-card {
       display: none; max-width: 560px; margin: 0 auto; padding: 40px 32px;
@@ -158,7 +157,7 @@
     .action-btn.outline { background: transparent; color: #1a1a1a; border: 1px solid #ddd; }
     .action-btn.outline:hover { border-color: #999; }
     .post-count { font-size: 13px; color: #aaa; margin-top: 20px; }
-
+ 
     /* ── How It Works ── */
     .how { max-width: 560px; margin: 0 auto; padding: 0 24px; }
     .divider { width: 100%; max-width: 560px; height: 1px; background: #f0f0f0; margin: 56px auto; }
@@ -172,12 +171,12 @@
     }
     .step-text { font-size: 15px; color: #555; line-height: 1.6; padding-top: 5px; }
     .step-text strong { color: #1a1a1a; font-weight: 600; }
-
+ 
     .footer { text-align: center; padding: 56px 24px 48px; font-size: 12px; color: #ccc; }
   </style>
 </head>
 <body>
-
+ 
   <div class="hero">
     <div class="logo-row">
       <div class="logo-mark">
@@ -193,16 +192,16 @@
     <h1>A visual portfolio for your Substack</h1>
     <p>Paste your URL, pick a card style, and get a shareable grid page that updates every time you publish.</p>
   </div>
-
+ 
   <!-- ── Form ── -->
   <div class="form-card" id="formCard">
-
+ 
     <div class="field">
       <label>Substack URL</label>
       <input type="text" id="substackUrl" placeholder="https://yourname.substack.com" autocomplete="off" />
       <div class="hint">Your Substack URL or custom domain</div>
     </div>
-
+ 
     <div class="row">
       <div class="field">
         <label>Display name</label>
@@ -214,18 +213,17 @@
         <div class="hint">Auto-detected if left blank</div>
       </div>
     </div>
-
+ 
     <!-- Style Picker with Mockups -->
     <div class="style-section">
       <label>Card style</label>
       <div class="style-grid">
-
+ 
         <div class="style-card active" data-style="clean" onclick="selectStyle('clean')">
           <div class="style-preview preview-clean">
             <div class="bg"></div>
             <div class="overlay">
               <span class="t">Breakfast is Included</span>
-              <span class="s">Nothing to Declare</span>
             </div>
           </div>
           <div class="style-info">
@@ -233,13 +231,12 @@
             <div class="desc">Centered, minimal</div>
           </div>
         </div>
-
+ 
         <div class="style-card" data-style="bold" onclick="selectStyle('bold')">
           <div class="style-preview preview-bold">
             <div class="bg"></div>
             <div class="overlay">
               <span class="t">Breakfast is Included</span>
-              <span class="s">Nothing to Declare</span>
             </div>
           </div>
           <div class="style-info">
@@ -247,13 +244,12 @@
             <div class="desc">Strong, bottom-anchored</div>
           </div>
         </div>
-
+ 
         <div class="style-card" data-style="editorial" onclick="selectStyle('editorial')">
           <div class="style-preview preview-editorial">
             <div class="bg"></div>
             <div class="overlay">
               <span class="t">Breakfast is Included</span>
-              <span class="s">Nothing to Declare</span>
             </div>
           </div>
           <div class="style-info">
@@ -261,14 +257,20 @@
             <div class="desc">Serif, magazine feel</div>
           </div>
         </div>
-
+ 
       </div>
     </div>
-
+ 
+    <label class="toggle-row">
+      <input type="checkbox" id="excludeNoImage" checked />
+      <span>Hide posts without cover images</span>
+      <span class="toggle-hint">Videos, podcasts, text-only</span>
+    </label>
+ 
     <button class="submit-btn" id="submitBtn" onclick="createPage()">Generate my grid page</button>
     <div class="error" id="errorMsg"></div>
   </div>
-
+ 
   <!-- ── Success ── -->
   <div class="success-card" id="successCard">
     <div class="success-icon">&#10003;</div>
@@ -281,9 +283,9 @@
     </div>
     <p class="post-count" id="postCount"></p>
   </div>
-
+ 
   <div class="divider"></div>
-
+ 
   <!-- ── How It Works ── -->
   <div class="how">
     <h3>How it works</h3>
@@ -306,60 +308,66 @@
       </div>
     </div>
   </div>
-
+ 
   <div class="footer">stack.pub</div>
-
+ 
   <script>
     let liveUrl = '';
     let selectedStyle = 'clean';
-
+ 
     function selectStyle(style) {
       selectedStyle = style;
       document.querySelectorAll('.style-card').forEach(el => {
         el.classList.toggle('active', el.dataset.style === style);
       });
     }
-
+ 
     async function createPage() {
       const substackUrl = document.getElementById('substackUrl').value.trim();
       const displayName = document.getElementById('displayName').value.trim();
       const logoUrl = document.getElementById('logoUrl').value.trim();
       const btn = document.getElementById('submitBtn');
       const err = document.getElementById('errorMsg');
-
+ 
       err.style.display = 'none';
-
+ 
       if (!substackUrl) return showError('Please enter your Substack URL.');
       if (!displayName) return showError('Please enter a display name.');
-
+ 
+      const excludeNoImage = document.getElementById('excludeNoImage').checked;
+ 
       btn.disabled = true;
       btn.textContent = 'Fetching your posts\u2026';
-
+ 
       try {
         const res = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ substackUrl, displayName, logoUrl, imageStyle: selectedStyle })
+          body: JSON.stringify({ substackUrl, displayName, logoUrl, imageStyle: selectedStyle, excludeNoImage })
         });
         const data = await res.json();
-
+ 
         if (!res.ok || data.error) throw new Error(data.error || 'Something went wrong');
-
+ 
         liveUrl = window.location.origin + data.url;
         document.getElementById('pageUrl').textContent = liveUrl;
         document.getElementById('pageUrl').href = liveUrl;
         document.getElementById('viewBtn').href = liveUrl;
-        document.getElementById('postCount').textContent = `${data.postCount} stories loaded \u00b7 updates automatically`;
+ 
+        let countText = `${data.postCount} stories loaded`;
+        if (data.excluded > 0) countText += ` \u00b7 ${data.excluded} without images hidden`;
+        countText += ' \u00b7 updates automatically';
+        document.getElementById('postCount').textContent = countText;
         document.getElementById('formCard').style.display = 'none';
         document.getElementById('successCard').style.display = 'block';
-
+ 
       } catch (e) {
         showError(e.message);
         btn.disabled = false;
         btn.textContent = 'Generate my grid page';
       }
     }
-
+ 
     function copyUrl() {
       navigator.clipboard.writeText(liveUrl).then(() => {
         const btn = document.querySelector('.action-btn');
@@ -367,13 +375,13 @@
         setTimeout(() => btn.textContent = 'Copy link', 2000);
       });
     }
-
+ 
     function showError(msg) {
       const err = document.getElementById('errorMsg');
       err.textContent = msg;
       err.style.display = 'block';
     }
-
+ 
     document.querySelectorAll('input').forEach(input => {
       input.addEventListener('keydown', e => { if (e.key === 'Enter') createPage(); });
     });
