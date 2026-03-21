@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>stack.pub — Visual portfolio pages for Substack writers</title>
-  <meta name="description" content="Turn your Substack into a beautiful link-in-bio grid. Paste your URL, pick a style, share the link." />
+  <meta name="description" content="Turn your newsletter into a beautiful link-in-bio grid. Paste your URL, pick a style, share the link." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Bricolage+Grotesque:wght@700;800&family=Newsreader:ital,wght@0,600;1,400&family=Bebas+Neue&display=swap" rel="stylesheet" />
   <style>
@@ -44,7 +44,6 @@
     .style-section { margin-bottom: 24px; }
     .style-section > label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 12px; }
     .style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    @media (max-width: 520px) { .style-grid { gap: 10px; } }
 
     .style-card {
       border: 2px solid #eee; border-radius: 12px; overflow: hidden;
@@ -54,43 +53,43 @@
     .style-card.active { border-color: #1a1a1a; box-shadow: 0 0 0 3px rgba(26,26,26,0.08); }
 
     .style-preview {
-      aspect-ratio: 3/4; position: relative; overflow: hidden;
+      aspect-ratio: 9/16; position: relative; overflow: hidden;
       background: #d5d0c8;
     }
     .style-preview .bg {
       position: absolute; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='530'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23b8a99a'/%3E%3Cstop offset='100%25' stop-color='%23897766'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='400' height='530'/%3E%3Ccircle cx='320' cy='80' r='60' fill='%23d4c5b5' opacity='0.4'/%3E%3Crect x='0' y='350' width='400' height='180' fill='%23a08c7a' opacity='0.3'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='710'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23b8a99a'/%3E%3Cstop offset='100%25' stop-color='%23897766'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g)' width='400' height='710'/%3E%3Ccircle cx='320' cy='120' r='80' fill='%23d4c5b5' opacity='0.4'/%3E%3Crect x='0' y='450' width='400' height='260' fill='%23a08c7a' opacity='0.3'/%3E%3C/svg%3E");
       background-size: cover;
     }
 
     .preview-broadsheet .overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.68) 0%, transparent 55%);
+      background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 40%, transparent 100%);
       display: flex; align-items: flex-end; padding: 12px;
     }
     .preview-broadsheet .overlay .t {
       font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
-      font-size: clamp(14px, 3.5vw, 19px); color: #fff; line-height: 1.1;
+      font-size: clamp(13px, 3vw, 17px); color: #fff; line-height: 1.1;
     }
 
     .preview-byline .overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, transparent 50%);
+      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.08) 40%, transparent 100%);
       display: flex; align-items: flex-end; padding: 12px;
     }
     .preview-byline .overlay .t {
       font-family: 'Newsreader', serif; font-weight: 400;
-      font-size: clamp(14px, 3.5vw, 19px); font-style: italic; color: #fff; line-height: 1.12;
+      font-size: clamp(13px, 3vw, 17px); font-style: italic; color: #fff; line-height: 1.1;
     }
 
     .preview-billboard .overlay {
       position: absolute; inset: 0;
-      background: rgba(0,0,0,0.48);
+      background: rgba(0,0,0,0.2);
       display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px;
     }
     .preview-billboard .overlay .t {
       font-family: 'Bebas Neue', sans-serif; font-weight: 400;
-      font-size: clamp(18px, 5vw, 26px); color: #fff; text-transform: uppercase;
+      font-size: clamp(17px, 4.5vw, 24px); color: #fff; text-transform: uppercase;
       line-height: 0.95; letter-spacing: 0.04em;
     }
 
