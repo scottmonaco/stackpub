@@ -55,10 +55,12 @@ async function fetchViaAPI(publication) {
           const slug = post.slug || '';
           const link = `${baseUrl}/p/${slug}`;
           const img = post.cover_image || '';
+          const postType = post.type || 'newsletter';
+          const isArticle = (postType === 'newsletter' || postType === 'thread');
 
           if (title && slug) {
             const utmLink = `${link}?utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`;
-            allPosts.push({ title, link: utmLink, img });
+            allPosts.push({ title, link: utmLink, img, isArticle });
           }
         }
 
@@ -119,6 +121,14 @@ async function fetchViaRSS(publication) {
         const title = item.title || '';
         const link = item.link || '';
         let img = '';
+        let isArticle = true;
+
+        // Check if this is a video/podcast via enclosure type
+        if (item.enclosure && item.enclosure.$ && item.enclosure.$.type) {
+          const mt = item.enclosure.$.type;
+          if (mt.startsWith('video/') || mt.startsWith('audio/')) isArticle = false;
+        }
+
         if (item.enclosure && item.enclosure.$ && item.enclosure.$.url) {
           const mt = item.enclosure.$.type || '';
           if (mt.startsWith('image/') || (!mt && item.enclosure.$.url.match(/\.(jpg|jpeg|png|webp|gif)/i))) {
@@ -133,7 +143,7 @@ async function fetchViaRSS(publication) {
         const utmLink = link.includes('?')
           ? `${link}&utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`
           : `${link}?utm_source=stackpub&utm_medium=portfolio&utm_campaign=grid`;
-        return { title, link: utmLink, img };
+        return { title, link: utmLink, img, isArticle };
       }).filter(p => p.title && p.link);
 
       const name = channel.title || publication;
@@ -166,7 +176,7 @@ app.post('/api/register', async (req, res) => {
   try {
     const feed = await fetchSubstackFeed(slug);
     let posts = feed.posts;
-    if (excludeNoImage) posts = posts.filter(p => p.img);
+    if (excludeNoImage) posts = posts.filter(p => p.img && p.isArticle !== false);
 
     pages[slug] = {
       slug,
@@ -196,7 +206,7 @@ app.get('/api/refresh/:slug', async (req, res) => {
   try {
     const feed = await fetchSubstackFeed(slug);
     let posts = feed.posts;
-    if (pages[slug].excludeNoImage) posts = posts.filter(p => p.img);
+    if (pages[slug].excludeNoImage) posts = posts.filter(p => p.img && p.isArticle !== false);
     pages[slug].posts = posts;
     pages[slug].updatedAt = new Date().toISOString();
     res.json({ ok: true, postCount: posts.length });
