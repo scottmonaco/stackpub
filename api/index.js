@@ -18,17 +18,11 @@ function parseSubstackUrl(input) {
   return clean.split('/')[0];
 }
 
-// ─── Determine base URL (custom domain vs substack subdomain) ────────────────
 function getBaseUrls(publication) {
-  const isCustomDomain = publication.includes('.');
-  if (isCustomDomain) {
-    // Custom domain — hit it directly, and also try substack subdomain as fallback
-    return [`https://${publication}`];
-  }
+  if (publication.includes('.')) return [`https://${publication}`];
   return [`https://${publication}.substack.com`];
 }
 
-// ─── Use Substack's undocumented API for full post archive ───────────────────
 async function fetchViaAPI(publication) {
   const baseUrls = getBaseUrls(publication);
   let lastError;
@@ -70,6 +64,7 @@ async function fetchViaAPI(publication) {
 
       if (allPosts.length === 0) continue;
 
+      // Fetch publication metadata (name, logo)
       let name = publication;
       let logo = '';
       let substackUrl = baseUrl;
@@ -81,7 +76,7 @@ async function fetchViaAPI(publication) {
         if (metaRes.ok) {
           const meta = await metaRes.json();
           name = meta.name || publication;
-          logo = meta.logo_url || '';
+          logo = meta.logo_url || meta.logo_url_small || '';
           if (meta.custom_domain) substackUrl = `https://${meta.custom_domain}`;
         }
       } catch (e) { /* use defaults */ }
@@ -94,7 +89,6 @@ async function fetchViaAPI(publication) {
   throw lastError || new Error('API not available');
 }
 
-// ─── Fallback: RSS feed (limited to ~20 posts) ──────────────────────────────
 async function fetchViaRSS(publication) {
   const isCustomDomain = publication.includes('.');
   const urls = isCustomDomain
@@ -123,12 +117,10 @@ async function fetchViaRSS(publication) {
         let img = '';
         let isArticle = true;
 
-        // Check if this is a video/podcast via enclosure type
         if (item.enclosure && item.enclosure.$ && item.enclosure.$.type) {
           const mt = item.enclosure.$.type;
           if (mt.startsWith('video/') || mt.startsWith('audio/')) isArticle = false;
         }
-
         if (item.enclosure && item.enclosure.$ && item.enclosure.$.url) {
           const mt = item.enclosure.$.type || '';
           if (mt.startsWith('image/') || (!mt && item.enclosure.$.url.match(/\.(jpg|jpeg|png|webp|gif)/i))) {
@@ -148,7 +140,7 @@ async function fetchViaRSS(publication) {
 
       const name = channel.title || publication;
       const logo = channel.image?.url || '';
-      const substackUrl = channel.link || `https://${publication}${publication.includes('.') ? '' : '.substack.com'}`;
+      const substackUrl = channel.link || `https://${publication}${isCustomDomain ? '' : '.substack.com'}`;
       return { name, logo, substackUrl, posts };
     } catch (e) {
       lastError = e;
@@ -157,7 +149,6 @@ async function fetchViaRSS(publication) {
   throw lastError || new Error(`Could not fetch feed for "${publication}"`);
 }
 
-// ─── Try API first, fall back to RSS ─────────────────────────────────────────
 async function fetchSubstackFeed(publication) {
   try {
     const result = await fetchViaAPI(publication);
@@ -229,12 +220,12 @@ app.get('/:slug', (req, res) => {
 
 const styleFonts = {
   broadsheet: {
-    import: "family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,600",
-    title: "'Bricolage Grotesque', sans-serif",
+    import: "family=Syne:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,600",
+    title: "'Syne', sans-serif",
     body: "'DM Sans', sans-serif"
   },
   byline: {
-    import: "family=Newsreader:ital,wght@0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,600",
+    import: "family=Newsreader:ital,wght@1,400;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,600",
     title: "'Newsreader', serif",
     body: "'DM Sans', sans-serif"
   },
@@ -246,9 +237,13 @@ const styleFonts = {
 };
 
 function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts, updatedAt }) {
-  const header = logoUrl
-    ? `<img class="logo" src="${logoUrl}" alt="${esc(displayName)}" />\n    <div class="site-name sub">${esc(displayName)}</div>`
-    : `<div class="site-name">${esc(displayName)}</div>`;
+  // Logo + name underneath if logo exists; just name big if not
+  let header;
+  if (logoUrl) {
+    header = `<img class="logo" src="${logoUrl}" alt="${esc(displayName)}" />\n    <div class="site-name sub">${esc(displayName)}</div>`;
+  } else {
+    header = `<div class="site-name">${esc(displayName)}</div>`;
+  }
 
   const style = imageStyle || 'broadsheet';
   const fonts = styleFonts[style] || styleFonts.broadsheet;
@@ -269,39 +264,38 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
   const styleCSS = {
     broadsheet: `
       .card .overlay {
-        display: flex; align-items: flex-end;
-        text-align: left; padding: 3.5cqi;
-        background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 40%, transparent 100%);
+        display: flex; align-items: flex-start;
+        text-align: left; padding: 7cqi;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.04) 35%, transparent 100%);
       }
       .card .card-title {
-        font-family: ${fonts.title}; font-weight: 800;
-        font-size: 12cqi;
-        color: #fff; line-height: 1.08;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+        font-family: ${fonts.title}; font-weight: 700;
+        font-size: 11cqi;
+        color: #fff; line-height: 1.06; letter-spacing: -0.02em;
+        text-shadow: 0 1px 5px rgba(0,0,0,0.4);
       }`,
     byline: `
       .card .overlay {
-        display: flex; align-items: flex-end;
-        text-align: left; padding: 3.5cqi;
-        background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.08) 40%, transparent 100%);
+        display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+        text-align: center; padding: 7cqi;
+        background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 40%, transparent 100%);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
         font-size: 12cqi;
-        font-style: italic; color: #fff; line-height: 1.08;
-        text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+        font-style: italic; color: #fff; line-height: 1.1;
+        text-shadow: 0 1px 5px rgba(0,0,0,0.4);
       }`,
     billboard: `
       .card .overlay {
         display: flex; align-items: center; justify-content: center;
-        text-align: center; padding: 3.5cqi;
-        background: rgba(0,0,0,0.2);
+        text-align: center; padding: 6cqi;
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
-        font-size: 16cqi;
-        color: #fff; text-transform: uppercase; line-height: 0.92; letter-spacing: 0.04em;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        font-size: 18cqi;
+        color: rgba(255,255,255,0.7);
+        text-transform: uppercase; line-height: 0.92; letter-spacing: 0.03em;
       }`
   };
 
