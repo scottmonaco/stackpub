@@ -6,7 +6,7 @@
   <title>stack.pub — Visual portfolio pages for newsletter writers</title>
   <meta name="description" content="Turn your newsletter into a beautiful link-in-bio grid. Paste your URL, pick a style, share the link." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Bricolage+Grotesque:wght@700;800&family=Newsreader:ital,wght@0,600;1,400&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Syne:wght@600;700&family=Newsreader:ital,wght@1,400;1,500&family=Bebas+Neue&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { background: #fff; }
@@ -54,8 +54,7 @@
 
     .style-preview {
       aspect-ratio: 3/4; position: relative; overflow: hidden;
-      background: #d5d0c8;
-      container-type: inline-size;
+      background: #d5d0c8; container-type: inline-size;
     }
     .style-preview .bg {
       position: absolute; inset: 0;
@@ -63,35 +62,39 @@
       background-size: cover;
     }
 
+    /* Broadsheet preview — Syne, top-left */
     .preview-broadsheet .overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 40%, transparent 100%);
-      display: flex; align-items: flex-end; padding: 10px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.04) 35%, transparent 100%);
+      display: flex; align-items: flex-start; padding: 7cqi;
     }
     .preview-broadsheet .overlay .t {
-      font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
-      font-size: 12cqi; color: #fff; line-height: 1.1;
+      font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: 11cqi; color: #fff; line-height: 1.06; letter-spacing: -0.02em;
+      text-shadow: 0 1px 5px rgba(0,0,0,0.4);
     }
 
+    /* Byline preview — Newsreader italic, bottom-center */
     .preview-byline .overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.08) 40%, transparent 100%);
-      display: flex; align-items: flex-end; padding: 10px;
+      background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 40%, transparent 100%);
+      display: flex; align-items: flex-end; justify-content: center; padding: 7cqi; text-align: center;
     }
     .preview-byline .overlay .t {
       font-family: 'Newsreader', serif; font-weight: 400;
       font-size: 12cqi; font-style: italic; color: #fff; line-height: 1.1;
+      text-shadow: 0 1px 5px rgba(0,0,0,0.4);
     }
 
+    /* Billboard preview — Bebas Neue, centered, semi-transparent */
     .preview-billboard .overlay {
       position: absolute; inset: 0;
-      background: rgba(0,0,0,0.2);
-      display: flex; align-items: center; justify-content: center; text-align: center; padding: 10px;
+      display: flex; align-items: center; justify-content: center; text-align: center; padding: 6cqi;
     }
     .preview-billboard .overlay .t {
       font-family: 'Bebas Neue', sans-serif; font-weight: 400;
-      font-size: 16cqi; color: #fff; text-transform: uppercase;
-      line-height: 0.95; letter-spacing: 0.04em;
+      font-size: 18cqi; color: rgba(255,255,255,0.7); text-transform: uppercase;
+      line-height: 0.92; letter-spacing: 0.03em;
     }
 
     .style-info { padding: 10px 12px 12px; text-align: center; }
@@ -332,7 +335,7 @@
         document.getElementById('viewBtn').href = liveUrl;
 
         let countText = `${data.postCount} stories loaded`;
-        if (data.excluded > 0) countText += ` \u00b7 ${data.excluded} without images hidden`;
+        if (data.excluded > 0) countText += ` \u00b7 ${data.excluded} hidden`;
         countText += ' \u00b7 updates automatically';
         document.getElementById('postCount').textContent = countText;
 
