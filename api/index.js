@@ -220,8 +220,8 @@ app.get('/:slug', (req, res) => {
 
 const styleFonts = {
   broadsheet: {
-    import: "family=Syne:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,600",
-    title: "'Syne', sans-serif",
+    import: "family=Sora:wght@500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,600",
+    title: "'Sora', sans-serif",
     body: "'DM Sans', sans-serif"
   },
   byline: {
