@@ -266,36 +266,38 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
       .card .overlay {
         display: flex; align-items: flex-start;
         text-align: left; padding: 7cqi;
-        background: linear-gradient(to bottom, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.04) 35%, transparent 100%);
+        background: linear-gradient(to bottom, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.35) 25%, rgba(0,0,0,0.12) 50%, transparent 100%);
       }
       .card .card-title {
-        font-family: ${fonts.title}; font-weight: 700;
-        font-size: 11cqi;
-        color: #fff; line-height: 1.06; letter-spacing: -0.02em;
-        text-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        font-family: ${fonts.title}; font-weight: 600;
+        font-size: 8.5cqi;
+        color: #fff; line-height: 1.1; letter-spacing: -0.01em;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.7), 0 2px 10px rgba(0,0,0,0.5), 0 0 24px rgba(0,0,0,0.3);
       }`,
     byline: `
       .card .overlay {
         display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
         text-align: center; padding: 7cqi;
-        background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 40%, transparent 100%);
+        background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.35) 25%, rgba(0,0,0,0.12) 50%, transparent 100%);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
         font-size: 12cqi;
         font-style: italic; color: #fff; line-height: 1.1;
-        text-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        text-shadow: 0 1px 3px rgba(0,0,0,0.7), 0 2px 10px rgba(0,0,0,0.5), 0 0 24px rgba(0,0,0,0.3);
       }`,
     billboard: `
       .card .overlay {
         display: flex; align-items: center; justify-content: center;
         text-align: center; padding: 6cqi;
+        background: rgba(0,0,0,0.18);
       }
       .card .card-title {
         font-family: ${fonts.title}; font-weight: 400;
         font-size: 18cqi;
-        color: rgba(255,255,255,0.7);
+        color: rgba(255,255,255,0.75);
         text-transform: uppercase; line-height: 0.92; letter-spacing: 0.03em;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 0 28px rgba(0,0,0,0.35);
       }`
   };
 
@@ -334,11 +336,11 @@ function renderPage({ slug, displayName, logoUrl, imageStyle, substackUrl, posts
     }
     .card img {
       width: 100%; height: 100%; object-fit: cover; display: block;
-      filter: brightness(0.7) saturate(0.9);
+      filter: brightness(0.62) saturate(0.9);
       transition: filter 0.4s ease, transform 0.5s ease;
     }
     .card:hover img, .card:active img {
-      filter: brightness(0.95) saturate(1.1); transform: scale(1.03);
+      filter: brightness(0.88) saturate(1.1); transform: scale(1.03);
     }
     .overlay { position: absolute; inset: 0; pointer-events: none; }
 
